@@ -6,11 +6,24 @@ While a few of these gems are still in pre-release status, their maintainers, co
 
 With the creation of the new Rails Discord channel for people interested in contributing to Rails, I think it's a good time to coordinate with the community so we can pare down the rough edges. Therefore I'd like to start this thread so we can make a more visible demonstration that there are people working to improve things and provide central source of knowledge while all the related guides haven't been updated.
 
-## Gems: explanations and recommendations
+**This is a work in progress**
 
-I'm writing this not as maintainer of any of these gems, but as a regular contributor and someone who has deployed most of them in the monolithic production app that my own company relies on. Therefore corrections and suggestions are welcome (including grammar. English is hard).
+## Four approaches to the Asset Pipeline
 
-**This is very much a work in progress**.
+- Sprockets: The original asset pipeline gem, built for the HTTP/1 era and low javascript frontends. It handled the bundling and digesting of javascript, css and image files, without relying on node packages.
+
+
+- Webpacker/Shakapacker: Shipped with Rails 5.2, as a wrapper around the complexity of Webpack/Node/Yarn, this gem could completely replace Sprockets or simply take over javascript transpiling and bundling. It provided Rails "out of the box" support for SPA frameworks like React.
+
+
+- Import Maps: Shipped with Rails 7.0, it replaces Sprockets as the default asset pipeline gem. Although it eliminates the need for node/yarn and other complex tooling, it requires the application using it to be deployed in an environment that supports HTTP/2, otherwise it causes severe performance problems.
+
+
+- Bundling gems: Shipped with Rails 7.0, the multiple bundling gems provide a more traditional, if more modern, approach to the asset pipeline than import maps does. They basically break down the "all in one" approach of Sprockets into multiple smaller, specialized pieces. The main gems are propshaft, jsbundling and cssbundling.
+
+## Explanations and recommendations
+
+I'm writing this not as maintainer of any of these gems, but as a regular contributor and someone who has deployed most of them in the monolithic production app that my own company relies on. Corrections and suggestions are welcome.
 
 ### Sprockets
 
@@ -18,13 +31,13 @@ I'm writing this not as maintainer of any of these gems, but as a regular contri
 
 - Notes: Several fixes and updates are only available in the edge version.
 
-The original asset pipeline gem, Sprockets provides bundling and digesting for javascript, css and image files. Built before node was widely adopted, Sprocket's "everything included" approch worked well for many years. However, as frontend programming became more complex, it started to fall behind dedicated tools like webpack. It was the only officially supported gem up to Rails 5.2, when Webpacker was introduced, and remained the recommended approach until Rails 7, when it was replaced by Import Maps.
+The original asset pipeline gem, Sprockets provides bundling and digesting for javascript, css and image files. Built before node was widely adopted, Sprocket's "everything included" approach worked well for many years. However, as frontend programming became more complex, it started to fall behind dedicated tools like webpack. It was the only officially supported gem up to Rails 5.2, when Webpacker was introduced, and remained the default until Rails 7, when it was replaced by Import Maps.
 
-**If you have an existing app with Sprockets**: You can continue using Sprockets. It is no longer under active development, but still receives updates to ensure compatibility with the newer parts of the asset pipeline.
+**If you are learning Rails**: Don't use it. Your time will be better spent learning one of the more modern approaches.
 
-**If you are starting a new app**: Only use Sprockets if you absolutely do not want to deal with node/yarn and are not ready for an import maps approach. Or if you'd rather not rely on Propshaft, due to its pre-release status.
+**If you are starting a new app**: Only if you absolutely do not want to deal with node/yarn and are not ready for import maps.
 
-**If you are just getting started on Rails**: Don't use it. Your time will be better spent learning one of the more modern gems below. Check their individual recommendations to make a decision.
+**If you have an existing app with Sprockets**: You can continue using it. Sprockets will receive maintenance updates at least until Propshaft reaches 1.0, and probably longer.
 
 ### Webpacker
 
@@ -36,27 +49,25 @@ Rails has always had a complicated relationship with vanilla javascript, and to 
 
 Five years later, all browsers oficially support ES6, so transpilation was no longer necessary and the extra complexity not worth for many developers. This lead to Webpacker being retired.
 
+**If you are learning Rails**: Don't use it. If your plan is to build your frontend entirely with Rails and Hotwired, then import maps is the preferred approach. However if your plan is to use a framework like React, then Shakapacker is the official sucessor and includes all the nice things that most javascript developers expect.
+
+**If you are starting a new app**: Don't use it. SPAs should go with Shakapacker, the official sucessor of Webpacker, which supports things like HMR. Hotwired/Tailwind based apps should go with importmaps-rails, or the bundling gems, which let you to choose your preferred bundling tool (esbuild, postcss, etc.).
+
 **If you have an existing app with Webpacker**: Give some serious consideration to replacing it. If your app is a SPA, specially a React one, then Shakapacker is your friend, as it's the official sucessor to Webpacker. If you are mostly using Hotwired and doing server side rendering, jsbundling-rails + webpack is an easy migration (and you can later migrate to the excellent esbuild).
-
-**If you are starting a new app**: Don't use it. SPAs should go with Shakapacker, the official sucessor of Webpacker, which supports things like HMR, and Hotwired/Tailwind based apps should go with importmaps-rails or jsbundling-rails.
-
-**If you are just getting started on Rails**: Check the recommendation above.
 
 ### Import maps
 
 - Status: Released, in active development
 
-- Notes: A shim is available to provide support for older browsers
+- Notes: A shim is available to provide support for older browsers.
 
 Rails 7 apps defaults to the importmaps-rails gem, which shares the same name as the import maps feature in browsers. This gem relies on the trifecta of HTTP2 (which eliminates the penalty of many small files), wide spread support for ES6 and the import map feature (which can the added to legacy browsers and Safari through a shim).
 
-The main advantage of this gem is that it eliminates the need for node/yarn and the complex javascript tooling that modern frontend development relies on.
+**If you are learning Rails**: This is the preferred approach, but only if you plan on building your frontends with Rails/Hotwired. If you want to use React/Vue/etc. then go with Shakapacker.
 
-**If you have an existing app**: This is a very different approach to handling javascript and css files. You will be better served if you stick to the node ecosystem and go with Shakapacker or jsbundling-rails/cssbundling-rails/propshaft.
+**If you are starting a new app**: Is it an SPA or your planned production environment only support HTTP1? This is not your friend, go with Shakapacker or the bundlings gems. However, if you are on the Hotwired team and have Cloudflare or Nginx in front of your Puma servers, then sure!
 
-**If you are starting a new app**: If you are building an SPA, this is not your friend. However if your app will be doing server side rendering and using Hotwired and tailwind, importmaps-rails is the preferred approach.
-
-**If you are just getting started on Rails**: Check the recommendation above.
+**If you have an existing app**: Stay where you are. This is a very different approach to handling javascript and css files and will require extensive work to migrate, specially if you have a lot of frontend code or rely on many node packages.
 
 ### Propshaft
 
@@ -64,13 +75,15 @@ The main advantage of this gem is that it eliminates the need for node/yarn and 
 
 - Notes: Already deployed to production in Basecamp (and by me, FWIW).
 
-The sucessor to Sprockets, it has a much smaller scope than its predecessor and relies on the companion gems jsbundling and cssbundling. Propshaft's only job is to digest files, fix references so that they use the digested filename, and move everything to the public folder. While jsbundling-rails and cssbundling-rails are only wrappers around other tools, propshaft does all the work itself and it is still a small gem. Therefore it is an excellent place to start contributing and you can read its entire code base in less than an hour.
+The sucessor to Sprockets, it has a much smaller scope than its predecessor: it's only handles digesting, fixin references in css files so they use the digested filename, and moving everything to the public folder.
 
-**If you have an existing app**: If you are currently on Webpacker AND feel comfortable using alpha version libraries AND reading through source code, sure! I'm using it in production and it works great. Otherwise, stay where you are or take a look at importmaps-rails and shakapacker.
+This means that any setup using propshaft will also be using one or more of the new bundlings gems, probably jsbundling-rails and cssbundling-rails.
 
-**If you are starting a new app**: Same as above.
+**If you are learning Rails**: Don't use it. It has no documentation, very few users and is still in alpha. You are already going to be spending a lot of effort learning other things, no need to make your life harder.
 
-**If you are just getting started on Rails**: Don't. It has almost no documentation, very few users, and its still in alpha. You are already going to be spending a lot of effort learning other things, so you'd be better of learning importmaps-rails (hotwired/tailwind) or shakapacker (SPAs like React)
+**If you are starting a new app**: Stick to import maps if you are going with Hotwired or shakapacker if you are going with React.
+
+**If you have an existing app**: Maybe. It should be an easy migration for apps that are running Sprockets (CSS and digests) and Webpacker (javascript) and will also allow you to later webpack with the phenomenal esbuild. Just make sure you are comfortable running pre-release code with almost zero documentation in production. For what is worth, I'm using it in production and so is Basecamp.
 
 ### jsbundling-rails
 
@@ -80,11 +93,11 @@ The sucessor to Sprockets, it has a much smaller scope than its predecessor and 
 
 Provides javascript bundling features that were previously handled by Sprockets and Webpacker. Supports webpack, esbuild and rollup.
 
-**If you have an existing app**:
+**If you are learning Rails**:
 
 **If you are starting a new app**:
 
-**If you are just getting started on Rails**:
+**If you have an existing app**:
 
 ### cssbundling-rails
 
@@ -94,11 +107,11 @@ Provides javascript bundling features that were previously handled by Sprockets 
 
 Provides css bundling features that were previously handled by Sprockets and Webpacker. Supports Tailwind, Bootstrap, Bulma, PostCSS and Dart Sass.
 
-**If you have an existing app**:
+**If you are learning Rails**:
 
 **If you are starting a new app**:
 
-**If you are just getting started on Rails**:
+**If you have an existing app**:
 
 ### dartsass-rails
 
@@ -108,19 +121,11 @@ Provides css bundling features that were previously handled by Sprockets and Web
 
 Same as cssbundling-rails, but specific for dart. A wrapper around the platform specific versions of dart, instead of the yarn versions.
 
-**If you have an existing app**:
+**If you are learning Rails**:
 
 **If you are starting a new app**:
 
-**If you are just getting started on Rails**:
-
-### Simple recommendations of which gems to use in your app:
-
-- Your app is a SPA: Shakapacker
-
-- You want to use Hotwired and Tailwind: Import maps
-
-- Everyone else: Propshaft, jsbundling (esbuild) and dartsass-rails.
+**If you have an existing app**:
 
 ### If you'd like to contribute
 
@@ -146,9 +151,11 @@ Open a PR for this guide at [Github](https://github.com/brenogazzola/asset-pipel
 
 ### Upgrade Guides
 
-- [From Turbolinks to Hotwired:Turbo](https://github.com/hotwired/turbo-rails/blob/main/UPGRADING.md)
+- [From Turbolinks to Turbo](https://github.com/hotwired/turbo-rails/blob/main/UPGRADING.md)
 
 - [From Sprockets/Wepacker to Propshaft](https://github.com/rails/propshaft/blob/main/UPGRADING.md)
+
+- [From Webpacker to Shakapacker](https://github.com/shakacode/shakapacker/blob/master/docs/v6_upgrade.md)
 
 ### Relevant Information
 
@@ -161,3 +168,4 @@ Open a PR for this guide at [Github](https://github.com/brenogazzola/asset-pipel
 ### Changelog
 
 - 2022-06-17: First version
+- 2022-06-18: Added the 'Four approaches' section. Rewrote some explanations
